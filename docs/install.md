@@ -122,6 +122,28 @@ node dsh/apps/cli/lib/bin.js --profile studio --patch studio/overlay.yml --patch
 
 浏览器打开脚本打印的地址。token 每次启动都会变，旧链接会返回 401。
 
+### 后台隐藏启动
+
+双击：
+
+```text
+scripts\start-studio-hidden.vbs
+```
+
+服务在后台运行，不显示控制台窗口，也不自动打开浏览器。链接和日志写入项目根目录的 `studio.log`。停止仍使用 `scripts\stop-studio.cmd`。
+
+### 开机自启
+
+```powershell
+pwsh ./scripts/install-startup.ps1
+```
+
+脚本在当前用户的「启动」文件夹创建 `Agents Studio.lnk`，登录后隐藏启动。取消：
+
+```powershell
+pwsh ./scripts/uninstall-startup.ps1
+```
+
 ## 7. 常见问题
 
 **启动时报 `Unknown agent preset`**

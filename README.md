@@ -28,7 +28,7 @@
 ```text
 你是我的 Windows 本机部署助手。当前目录是 Agents Studio 仓库根目录。
 
-请先读 README.md、docs/install.md、scripts/bootstrap.ps1、scripts/start-studio.cmd、scripts/stop-studio.cmd，然后完成部署：
+请先读 README.md、docs/install.md、scripts/bootstrap.ps1、scripts/start-studio.cmd、scripts/start-studio-hidden.vbs、scripts/install-startup.ps1、scripts/stop-studio.cmd，然后完成部署：
 
 1. 检查 Node.js >= 24.9、pnpm、Git。缺依赖时只告诉我需要装什么，不要擅自安装系统软件。
 2. 克隆固定版本的 dsh：
@@ -42,10 +42,11 @@
 4. 检查 SPARK_API_KEY / ZHIPU_API_KEY 是否已经在 Windows 用户环境变量里。如果没有，停下来告诉我到“系统属性 → 环境变量”里添加这两个变量名，不要向我索取 Key，也不要把 Key 写进任何文件。
 5. 双击或运行 scripts/start-studio.cmd，确认 http://127.0.0.1:3099 返回工作台页面，并把本次带 token 的链接发给我。
 6. 再验证 scripts/stop-studio.cmd 能停止 3099 端口上的进程。
-7. 如果我要桌宠或微信，再按 docs/pet.md 安装 dsh-pet 0.4.7；否则先只保证工作台可用。
-8. 不要提交 .dsh-home、日志、截图、.env 或任何密钥。遇到错误先读日志再修，不要猜。
+7. 如果我要后台隐藏启动，说明双击 scripts/start-studio-hidden.vbs 后去哪里看链接和日志；如果我要开机自启，运行 pwsh ./scripts/install-startup.ps1，并告诉我怎么取消。
+8. 如果我要桌宠或微信，再按 docs/pet.md 安装 dsh-pet 0.4.7；否则先只保证工作台可用。
+9. 不要提交 .dsh-home、日志、截图、.env 或任何密钥。遇到错误先读日志再修，不要猜。
 
-完成后告诉我：用哪个文件启动、用哪个文件停止、设置页在哪里，以及还需要我手动做什么。
+完成后告诉我：用哪个文件启动、哪个文件停止、隐藏启动和开机自启怎么用、设置页在哪里，以及还需要我手动做什么。
 ```
 
 如果你更想自己动手，按下面的步骤走。
@@ -108,6 +109,32 @@ http://127.0.0.1:3099/?token=...
 ```
 
 **每次启动 token 都会变，请使用本次窗口打印的链接；旧链接会返回 401。启动窗口不要关闭，关闭窗口就会停止服务。**
+
+### 6. 后台隐藏启动与开机自启
+
+不想看到 CMD 窗口时，双击：
+
+```text
+scripts\start-studio-hidden.vbs
+```
+
+它会在后台启动服务，不弹出浏览器，也不显示任务栏窗口。启动日志写到项目根目录的 `studio.log`，在里面搜索 `http://127.0.0.1:3099/?token=` 就能找到本次链接。停止仍然使用 `scripts\stop-studio.cmd`。
+
+如果 3099 端口已经在监听，VBS 会直接退出，不会重复启动。
+
+开机自启：
+
+```powershell
+pwsh ./scripts/install-startup.ps1
+```
+
+它会在当前用户的「启动」文件夹里创建一个指向 `wscript.exe` 的快捷方式，登录 Windows 后自动隐藏启动。取消：
+
+```powershell
+pwsh ./scripts/uninstall-startup.ps1
+```
+
+开机自启前，请确认 `SPARK_API_KEY`、`ZHIPU_API_KEY` 已经写入用户环境变量；否则启动日志里会提示缺 Key。
 
 ## 界面怎么用
 

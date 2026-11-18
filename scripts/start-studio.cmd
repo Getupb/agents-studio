@@ -50,5 +50,6 @@ node apps\cli\lib\bin.js --profile studio --patch "%ROOT%\studio\overlay.yml" --
 set "CODE=%ERRORLEVEL%"
 echo.
 if not "%CODE%"=="0" echo [Agents Studio] 退出码：%CODE% - 请查看上面的错误信息。
-echo 服务已停止。按任意键关闭窗口。
-pause >nul
+echo 服务已停止。
+rem 隐藏启动（VBS）没有控制台，不能 pause，否则进程会一直挂起。
+if not defined DSH_PET_HIDDEN pause >nul

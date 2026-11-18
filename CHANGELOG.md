@@ -22,6 +22,7 @@
 - 增加 README、LICENSE、NOTICE、SECURITY、CONTRIBUTING、Issue/PR 模板与发布检查脚本。
 - README 改为面向新使用者的上手文档，增加可交给 AI 的部署提示词。
 - 增加无需密钥的 `scripts/start-studio.cmd`、`scripts/stop-studio.cmd`、`scripts/restart-studio.cmd`。
+- 增加隐藏启动 `scripts/start-studio-hidden.vbs`，以及开机自启/取消脚本 `scripts/install-startup.ps1`、`scripts/uninstall-startup.ps1`。
 
 ### 已知限制
 

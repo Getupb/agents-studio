@@ -6,3 +6,4 @@
 *.jpeg binary
 *.woff binary
 *.ttf binary
+*.vbs text eol=crlf
