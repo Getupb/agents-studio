@@ -17,21 +17,13 @@ if not exist "%ROOT%\dsh\apps\cli\lib\bin.js" (
 
 if not defined SPARK_API_KEY (
   echo.
-  echo [Agents Studio] 还没有设置 SPARK_API_KEY。
-  echo 请在 Windows 用户环境变量里添加这个变量，值由你的模型平台提供。
-  echo 设置后重新打开这个窗口。
-  echo.
-  pause
-  exit /b 1
+  echo [Agents Studio] 提示：没有检测到 SPARK_API_KEY。
+  echo 不影响启动；可以在工作台「设置 → 模型」里填写，或改用其他模型提供商。
 )
 if not defined ZHIPU_API_KEY (
   echo.
-  echo [Agents Studio] 还没有设置 ZHIPU_API_KEY。
-  echo 请在 Windows 用户环境变量里添加这个变量，值由你的模型平台提供。
-  echo 设置后重新打开这个窗口。
-  echo.
-  pause
-  exit /b 1
+  echo [Agents Studio] 提示：没有检测到 ZHIPU_API_KEY。
+  echo 不影响启动；需要识图时，在工作台「设置 → 模型」里填写。
 )
 
 cd /d "%ROOT%\dsh"

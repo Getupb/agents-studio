@@ -69,6 +69,6 @@ if (-not $SkipGenerate) {
 
 Write-Host ""
 Write-Host "下一步：" -ForegroundColor Green
-Write-Host "  1. 设置 SPARK_API_KEY / ZHIPU_API_KEY 环境变量"
-Write-Host "  2. 运行 pwsh ./scripts/start-studio.ps1"
+Write-Host "  1. 运行 pwsh ./scripts/start-studio.ps1 或双击 scripts\start-studio.cmd"
+Write-Host "  2. 打开工作台后，在「设置 → 模型」里填写自己的 API Key（不需要设置 Windows 环境变量）"
 Write-Host "  3. 如使用桌宠/微信，按 docs/pet.md 安装 dsh-pet 0.4.7"

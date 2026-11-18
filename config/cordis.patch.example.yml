@@ -1,6 +1,6 @@
 # studio profile 的用户覆盖层
 # 说明：模型接入全部走官方 llm-pi-ai 自定义 provider，不改适配层代码。
-# 密钥不写进本文件：由环境变量（SPARK_API_KEY / ZHIPU_API_KEY）或 Web「设置 → 模型」写入凭据。
+# 密钥不写进本文件：启动后在 Web「设置 → 模型」填写；也兼容环境变量。
 
 # 文本主力：讯飞星火 Spark X2.6（OpenAI 兼容，已验证支持 tool_calls 与 reasoning）
 - id: llm-pi-ai

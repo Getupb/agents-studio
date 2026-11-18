@@ -70,16 +70,18 @@ node ./patches/dsh-pet/patch-pet-channel.mjs
 
 注意：这个脚本会修改 dsh-pet 的 `lib/*.js` 构建产物。上游代码仍受 MIT 约束；素材仍受上游的「禁止商用、公开二创须署名」约束，本仓库不提供素材。
 
-## 4. 第一次启动前：设置模型密钥
+## 4. 模型 Key：启动后在设置里填
 
-工作台需要两个环境变量：
+不需要设置 Windows 环境变量。启动工作台后，在「设置 → 模型」里可以看到预置的：
 
-```text
-SPARK_API_KEY
-ZHIPU_API_KEY
-```
+- 星火 Spark X2.6（文本）
+- 智谱 GLM 视觉（识图）
 
-在你自己的模型平台获取值后，打开 Windows 的「设置 → 系统 → 系统信息 → 高级系统设置 → 环境变量」，添加到**用户变量**。设置完成后重新打开终端。
+点「编辑」，填入你自己的 API Key 并保存即可。Key 保存在工作台本地凭据里，不会进入仓库。
+
+默认的星火 + 智谱是作者个人在用的组合，不是强制依赖。你也可以在模型页添加其他内置提供商，或使用「自定义模型 API」接入任意 OpenAI / Anthropic 兼容接口。
+
+官方入口：[讯飞星火 API](https://xinghuo.xfyun.cn/sparkapi) ｜ [智谱 BigModel](https://open.bigmodel.cn/)
 
 ## 5. 应用 dsh 补丁
 

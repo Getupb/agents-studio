@@ -7,8 +7,8 @@ $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 $Dsh = if ([IO.Path]::IsPathRooted($DshPath)) { $DshPath } else { Join-Path $Root $DshPath }
 
-if (-not $env:SPARK_API_KEY -or -not $env:ZHIPU_API_KEY) {
-  throw "缺少 SPARK_API_KEY 或 ZHIPU_API_KEY。请先在当前终端设置环境变量，不要把 Key 写进脚本。"
+if (-not $env:SPARK_API_KEY -and -not $env:ZHIPU_API_KEY) {
+  Write-Host "提示：没有检测到模型 Key。不影响启动，可以在工作台「设置 → 模型」里填写。" -ForegroundColor Yellow
 }
 
 if (-not (Test-Path -LiteralPath (Join-Path $Dsh "apps\cli\lib\bin.js"))) {

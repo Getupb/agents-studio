@@ -23,6 +23,8 @@
 - README 改为面向新使用者的上手文档，增加可交给 AI 的部署提示词。
 - 增加无需密钥的 `scripts/start-studio.cmd`、`scripts/stop-studio.cmd`、`scripts/restart-studio.cmd`。
 - 增加隐藏启动 `scripts/start-studio-hidden.vbs`，以及开机自启/取消脚本 `scripts/install-startup.ps1`、`scripts/uninstall-startup.ps1`。
+- 默认模型说明改为作者个人使用的星火 + 智谱组合，并给出官方 API 入口；API Key 改为在「设置 → 模型」里直接填写，不再要求 Windows 环境变量。
+- 部署提示词改为“开箱即用”检查清单，覆盖 4 个插件、默认模型路由、设置页、默认模式、隐藏启动与开机自启。
 
 ### 已知限制
 
