@@ -20,6 +20,8 @@
 - 上游修改导出为 `patches/dsh/*.patch`。
 - 桌宠渠道补丁独立到 `patches/dsh-pet/`。
 - 增加 README、LICENSE、NOTICE、SECURITY、CONTRIBUTING、Issue/PR 模板与发布检查脚本。
+- README 改为面向新使用者的上手文档，增加可交给 AI 的部署提示词。
+- 增加无需密钥的 `scripts/start-studio.cmd`、`scripts/stop-studio.cmd`、`scripts/restart-studio.cmd`。
 
 ### 已知限制
 

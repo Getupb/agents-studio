@@ -70,16 +70,16 @@ node ./patches/dsh-pet/patch-pet-channel.mjs
 
 注意：这个脚本会修改 dsh-pet 的 `lib/*.js` 构建产物。上游代码仍受 MIT 约束；素材仍受上游的「禁止商用、公开二创须署名」约束，本仓库不提供素材。
 
-## 4. 配置模型密钥
+## 4. 第一次启动前：设置模型密钥
 
-不要把 Key 写进脚本。启动前设置环境变量：
+工作台需要两个环境变量：
 
-```powershell
-$env:SPARK_API_KEY = "你的星火 Key"
-$env:ZHIPU_API_KEY = "你的智谱 Key"
+```text
+SPARK_API_KEY
+ZHIPU_API_KEY
 ```
 
-也可以放在你自己创建的、未跟踪的 `.env.local` 中，由你的 shell 加载。仓库的 `.gitignore` 已排除 `.env*`。
+在你自己的模型平台获取值后，打开 Windows 的「设置 → 系统 → 系统信息 → 高级系统设置 → 环境变量」，添加到**用户变量**。设置完成后重新打开终端。
 
 ## 5. 应用 dsh 补丁
 
@@ -94,10 +94,24 @@ cd ..
 
 如果你不想应用补丁，也可以只使用本仓库的插件；但品牌标题、插件导航收敛等行为可能不完整。
 
-## 6. 启动
+## 6. 启动与停止
+
+双击：
+
+```text
+scripts\start-studio.cmd
+```
+
+或使用 PowerShell：
 
 ```powershell
 pwsh ./scripts/start-studio.ps1
+```
+
+停止：
+
+```text
+scripts\stop-studio.cmd
 ```
 
 脚本会先重跑预设生成器（如果 `default-preset.yml` 不存在），再启动：
