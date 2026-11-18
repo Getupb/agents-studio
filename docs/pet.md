@@ -18,14 +18,15 @@ dsh-pet 的 README 写明：
 - 微信渠道增加「正在输入中」状态；
 - 桌宠的 `presetSetup` 支持微信渠道内部变体。
 
-这些改动大多在 dsh-pet 的构建产物里，所以 `patches/dsh-pet/patch-pet-channel.mjs` 需要同时改多份 `lib/*.js`；不要只改源码，宿主实际加载的是构建产物。
+这些改动大多在 dsh-pet 的构建产物里，所以 `patches/dsh-pet/patch-pet-channel.mjs` 和 `patches/dsh-pet/patch-session-share.mjs` 需要同时改多份 `lib/*.js`；不要只改源码，宿主实际加载的是构建产物。
 
 ## 安装
 
 1. 从上游获取 `dsh-pet-only@0.4.7`；
 2. 按上游 README 安装桌面 Helper；
 3. 如果使用微信裁剪，运行 `node patches/dsh-pet/patch-pet-channel.mjs`；
-4. 重启工作台。
+4. 如果使用微信渠道，运行 `node patches/dsh-pet/patch-session-share.mjs`，避免工作台页面和微信争抢同一间会话的写句柄；
+5. 重启工作台。
 
 ## 已知限制
 

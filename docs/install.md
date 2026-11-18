@@ -68,7 +68,13 @@ pwsh ./scripts/bootstrap.ps1 -DshPath .\dsh
 node ./patches/dsh-pet/patch-pet-channel.mjs
 ```
 
-注意：这个脚本会修改 dsh-pet 的 `lib/*.js` 构建产物。上游代码仍受 MIT 约束；素材仍受上游的「禁止商用、公开二创须署名」约束，本仓库不提供素材。
+微信渠道还建议同时运行会话复用补丁，避免工作台页面与微信争抢同一间 `session-pet-*` 会话的写句柄：
+
+```powershell
+node ./patches/dsh-pet/patch-session-share.mjs
+```
+
+注意：这两个脚本都会修改 dsh-pet 的 `lib/*.js` 构建产物。上游代码仍受 MIT 约束；素材仍受上游的「禁止商用、公开二创须署名」约束，本仓库不提供素材。
 
 ## 4. 模型 Key：启动后在设置里填
 

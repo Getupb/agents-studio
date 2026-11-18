@@ -69,7 +69,7 @@
    - Agent 预设里只有「默认模式」，可以改人设和工具开关。
 7. 不要设置 Windows 环境变量，也不要向我索取 Key。告诉我到「设置 → 模型 → 星火 Spark X2.6 → 编辑 → API 密钥 → 保存」填自己的 Key；智谱同理。留空也能启动，只是暂时不能调用对应模型。
 8. 验证 scripts/stop-studio.cmd 能停止 3099 端口；再说明隐藏启动 scripts/start-studio-hidden.vbs（链接和日志去 studio.log 看）和开机自启 scripts/install-startup.ps1 / 取消 scripts/uninstall-startup.ps1 的用法。
-9. 只有我明确说要桌宠或微信时，再按 docs/pet.md 安装 dsh-pet 0.4.7 并运行 node ./patches/dsh-pet/patch-pet-channel.mjs。没有安装就明确说：工作台插件已装，桌宠/微信未装。
+9. 只有我明确说要桌宠或微信时，再按 docs/pet.md 安装 dsh-pet 0.4.7，并运行 `node ./patches/dsh-pet/patch-pet-channel.mjs`；微信场景再运行 `node ./patches/dsh-pet/patch-session-share.mjs`。没有安装就明确说：工作台插件已装，桌宠/微信未装。
 10. 不要提交 .dsh-home、日志、截图、.env、.credentials.yaml 或任何密钥。遇到错误先读日志再修，不要猜。
 
 完成后按这个清单逐项打勾：dsh 构建、4 个插件、默认模型路由、设置页、模型页两行、插件页已安装、默认模式、启动/停止、隐藏启动、开机自启。哪一项没做到就明确说没做到，不要笼统说“已完成”。

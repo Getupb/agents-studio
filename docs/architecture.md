@@ -80,4 +80,4 @@ build-zero-preset.mjs
 | `ui-schedule` | 自动化任务收进设置 |
 | `agent-preset-registry` | 未注册 preset id 回落默认 |
 
-桌宠的 `presetSetup` 补丁在 `patches/dsh-pet/patch-pet-channel.mjs`，需要同步到 dsh-pet 的多份构建产物。
+桌宠的 `presetSetup` 补丁在 `patches/dsh-pet/patch-pet-channel.mjs`；会话写句柄复用补丁在 `patches/dsh-pet/patch-session-share.mjs`。两者都需要同步到 dsh-pet 的多份构建产物，因为宿主实际加载的是 `lib/*.js`。

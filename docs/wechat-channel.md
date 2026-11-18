@@ -9,6 +9,7 @@
 ## 前提
 
 - 已安装 dsh-pet `0.4.7`；
+- 已运行 `patches/dsh-pet/patch-session-share.mjs`，让微信和工作台页面复用同一间会话，避免写句柄冲突；
 - 已运行 `patches/dsh-pet/patch-pet-channel.mjs`（只有需要按渠道裁剪时才必须）；
 - 手机微信可以扫码登录。
 
