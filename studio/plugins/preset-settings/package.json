@@ -1,0 +1,21 @@
+{
+  "name": "studio-preset-settings",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Agents Studio 工作台的「设置 → Agent 预设」一级分区：默认模式人设、工具边界与微信渠道裁剪",
+  "type": "module",
+  "main": "index.mjs",
+  "exports": {
+    ".": "./index.mjs",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-settings"
+      ],
+      "platform": "web"
+    }
+  }
+}

@@ -1,0 +1,62 @@
+name: Bug 报告
+description: 报告一个可复现的问题
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。请先确认这不是上游 dsh / dsh-pet 自身的问题，并不要贴出真实 API Key、token、会话内容或微信二维码。
+  - type: input
+    id: version
+    attributes:
+      label: 项目版本
+      description: v0.1.0-alpha 或 commit hash
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: 出问题的部分
+      options:
+        - 工作台 / 设置
+        - Agent 预设
+        - 桌宠 / Helper
+        - 微信渠道
+        - 安装 / 构建
+        - 文档
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 尽量写成 1、2、3 的步骤
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 相关日志
+      description: 请先删除 token、Key、会话内容等隐私信息
+      render: text
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 确认
+      options:
+        - label: 我已经检查过 docs/install.md 和已有 Issue
+          required: true
+        - label: 我没有在内容里暴露真实密钥或隐私数据
+          required: true

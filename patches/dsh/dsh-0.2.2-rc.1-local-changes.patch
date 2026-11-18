@@ -1,0 +1,567 @@
+diff --git a/package.json b/package.json
+index c4f13094..909a7242 100644
+--- a/package.json
++++ b/package.json
+@@ -215,7 +215,7 @@
+     "start:web": "node --import tsx/esm apps/cli/src/bin.ts web",
+     "dev:web": "tsx scripts/dev-web.ts --poll",
+     "dev:bundle-registry": "tsx scripts/dev-bundle-registry.ts",
+-    "postinstall": "node scripts/install-lefthook.mjs",
++    "postinstall": "node -e \"console.log('[dsh-deploy] git hooks install skipped in this deployment')\"",
+     "gen-official-bundle-catalog": "tsx scripts/gen-official-bundle-catalog.ts",
+     "verify-official-bundle-catalog": "tsx scripts/gen-official-bundle-catalog.ts --check",
+     "gen-provider-data": "tsx packages/llm/llm-pi-ai/scripts/gen-provider-data.ts",
+diff --git a/packages/client/ui-layout/src/client/AppFrame.tsx b/packages/client/ui-layout/src/client/AppFrame.tsx
+index 23e71c9c..354c8a95 100644
+--- a/packages/client/ui-layout/src/client/AppFrame.tsx
++++ b/packages/client/ui-layout/src/client/AppFrame.tsx
+@@ -258,7 +258,12 @@ export function AppFrame({
+   const onRightbarDrag = useCallback((dx: number) => {
+     actions.setRightbar(rightbarBase.current - dx)
+   }, [actions])
+-  const productTitle = process.env.DSH_CLIENT_TITLE ?? t('brand.localBuild')
++  // 本机 fork：构建时 process.env 被静态替换成空对象，`DSH_CLIENT_TITLE` 在运行时读不到；
++  // 允许工作台插件通过 `globalThis.__STUDIO_PRODUCT_TITLE__` 覆盖标签页里的产品名（studio-brand 用）。
++  const studioProductTitle = (globalThis as { __STUDIO_PRODUCT_TITLE__?: unknown }).__STUDIO_PRODUCT_TITLE__
++  const productTitle = typeof studioProductTitle === 'string' && studioProductTitle.trim() !== ''
++    ? studioProductTitle
++    : process.env.DSH_CLIENT_TITLE ?? t('brand.localBuild')
+   // The rendered template lets the grid solve the squeeze natively: the centre
+   // declares its protected minimum and the right column bids up to the clamped
+   // preference, so a window resize lands in the same layout pass as the frame
+diff --git a/packages/client/ui-plugin-manager/src/client/index.ts b/packages/client/ui-plugin-manager/src/client/index.ts
+index f5908227..b4a94645 100644
+--- a/packages/client/ui-plugin-manager/src/client/index.ts
++++ b/packages/client/ui-plugin-manager/src/client/index.ts
+@@ -13,7 +13,6 @@ import type { Context as ClientContext } from '@deepseek-ai/cordis'
+ // ui-layout with the panel id brand, and the `sidebar.panellist` list the
+ // entry registers into, declared by ui-sidebar.
+ import type { HostObservable } from '@deepseek-ai/dsh-client-ui-slots'
+-import type { MainPanelId } from '@deepseek-ai/dsh-client-ui-layout/client'
+ import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
+ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+ // Type-only: the ctx.remoteAccess Context merge.
+@@ -26,7 +25,6 @@ import type {} from '@deepseek-ai/dsh-plugin-manager/types'
+ import { PluginManagerPage } from './PluginManagerPage.tsx'
+ import { createPluginHeaderRef } from './header-scroll.ts'
+ import { PluginRefreshToast, type PluginRefreshToastFace } from './PluginRefreshToast.tsx'
+-import { PluginsPanelIcon } from './PluginsPanelIcon.tsx'
+ import { configLedgerSource } from './config-ledger.ts'
+ import { tabLedgerSource } from './tab-ledger.ts'
+ import { PluginManagerController } from './manager-store.ts'
+@@ -80,7 +78,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
+ export const NS = 'pluginManager'
+ 
+ /** The id shared by the sidebar entry and the main panel it opens. */
+-export const PANEL_ID = 'plugins' as MainPanelId
++export const PANEL_ID = 'plugins'
+ 
+ /** Services required by the sidebar registration, the Remote methods, and access; the inventory says whether the Host manages a profile. */
+ export const inject = ['slots', 'locale', 'remote', 'remote.pluginManager', 'remote.pluginInventory', 'remote.pluginRegistryProbe', 'configForms', 'layout', 'remoteAccess']
+@@ -126,12 +124,16 @@ export function apply(ctx: ClientContext): void {
+         dismissNotice: face.dismissNotice,
+       }),
+     }, PluginRefreshToast))
+-    yield ctx.slots.inject('main', function* () {
++    // 本机 fork：插件管理从侧边栏主面板挪进设置，成为与「通用设置」「模型」平级的一级分区；
++    // 「已安装」「插件市场」仍是这一页里平级的两条 tab。
++    yield ctx.slots.inject('settings.section', function* () {
+       const handle = createNavigationStore(), instance = handle.create()
+       const store: typeof handle = { ...handle, create: () => instance }
+       yield ctx.slots.register({
+-        name: 'main',
+-        key: PANEL_ID,
++        name: 'settings.section',
++        id: PANEL_ID,
++        order: 15,
++        label: () => t('panel'),
+         locale: NS,
+         store,
+         inject: () => ({ ...face, createHeaderRef: createPluginHeaderRef }),
+@@ -147,29 +149,6 @@ export function apply(ctx: ClientContext): void {
+           'plugins.detail.section': { kind: 'list', scope: 'root' },
+         },
+       }, PluginManagerPage)
+-      yield ctx.layout.panelInfo.subscribe(() => {
+-        if (ctx.layout.panelInfo.getSnapshot().activePanelId !== PANEL_ID) instance.actions.setView({ kind: 'list' })
+-      })
+-      const disposeNavigation = ctx.reflect.provide('pluginNavigation', {
+-        openList: () => {
+-          ctx.layout.selectPanel(PANEL_ID)
+-          instance.actions.setTab('installed')
+-          instance.actions.setView({ kind: 'list' })
+-        },
+-        openBundle: (packageName: string) => {
+-          ctx.layout.selectPanel(PANEL_ID)
+-          instance.actions.setTab('installed')
+-          instance.actions.setView({ kind: 'package', name: packageName })
+-        },
+-      })
+-      yield () => { void disposeNavigation() }
+     })
+-    yield ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({
+-      name: 'sidebar.panellist',
+-      id: PANEL_ID,
+-      order: 0,
+-      label: () => t('panel'),
+-      locale: NS,
+-    }, PluginsPanelIcon))
+   })
+ }
+diff --git a/packages/client/ui-plugin-manager/tests/browser-plugin.client.spec.tsx b/packages/client/ui-plugin-manager/tests/browser-plugin.client.spec.tsx
+index 9069ce35..dd2b3670 100644
+--- a/packages/client/ui-plugin-manager/tests/browser-plugin.client.spec.tsx
++++ b/packages/client/ui-plugin-manager/tests/browser-plugin.client.spec.tsx
+@@ -1,26 +1,21 @@
+ // @vitest-environment jsdom
+-import { contextMenuHook } from '@deepseek-ai/dsh-client-test-runtime'
+ import assert from 'node:assert/strict'
+ import { Context, Service } from '@deepseek-ai/cordis'
+-import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+-import { cleanup, render } from '@testing-library/react'
++import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+ import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
+ import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
+ import type { ILayout, PanelInfo } from '@deepseek-ai/dsh-client-ui-layout/client'
+ import { SlotRegistry } from '@deepseek-ai/dsh-client-ui-renderer/client'
+ import { resolveSlotLabel } from '@deepseek-ai/dsh-client-ui-slots'
+-import { allowAllAccess, StaticRemoteAccess, TestRemote, usePinnedBrowserLanguages } from '@deepseek-ai/dsh-client-test-runtime'
++import { StaticRemoteAccess, TestRemote, usePinnedBrowserLanguages } from '@deepseek-ai/dsh-client-test-runtime'
+ import * as settings from '@deepseek-ai/dsh-client-ui-settings/client'
+ import { apply, inject, NS, PANEL_ID } from '../src/client/index.ts'
+ import { PluginManagerPage } from '../src/client/PluginManagerPage.tsx'
+ import { PluginRefreshToast, type PluginRefreshToastFace } from '../src/client/PluginRefreshToast.tsx'
+-import { PluginsPanelIcon } from '../src/client/PluginsPanelIcon.tsx'
+ import type { PluginManagerFace } from '../src/client/manager-store.ts'
+-import type { createNavigationStore } from '../src/client/navigation-store.ts'
+ 
+ usePinnedBrowserLanguages('zh-CN')
+ beforeEach(() => { localStorage.clear() })
+-afterEach(cleanup)
+ 
+ type AccessEffect = (() => void) | Iterable<() => void>
+ 
+@@ -101,95 +96,60 @@ function declare(slots: SlotRegistry): () => void {
+   return slots.register({
+     name: 'root',
+     children: {
+-      'main': { kind: 'keyed', scope: 'root' },
++      // 本机 fork：插件页不再占侧边栏主面板，而是设置里的一级分区。
++      'settings.section': { kind: 'list', scope: 'root' },
+       'shell.overlay': { kind: 'list', scope: 'root' },
+-      'sidebar.panellist': { kind: 'list', scope: 'root' },
+     },
+   } as never, () => null)
+ }
+ 
+ describe('ui-plugin-manager browser plugin', () => {
+-  it('resets bundle selection when leaving Plugins and releases its panel observer with the registration', async () => {
++  it('registers the settings section with one navigation store the page keeps across re-renders', async () => {
+     const b = await bench()
+     const removeRoot = declare(b.slots)
+     await b.ctx.plugin({ inject: [...inject], apply }).await()
+-    const entry = b.slots.entries('main')[0]!
++    const entry = b.slots.entries('settings.section')[0]!
+     assert(entry.store && 'create' in entry.store)
+-    const navigation = entry.store.create()
+-    expect(navigation.getSnapshot()).toEqual({ tab: 'installed', view: { kind: 'list' } })
+-    b.ctx.pluginNavigation.openBundle('dsh-navigation-test')
+-    expect(b.panelInfo.getSnapshot().activePanelId).toBe(PANEL_ID)
+-    expect(navigation.getSnapshot()).toEqual({ tab: 'installed', view: { kind: 'package', name: 'dsh-navigation-test' } })
+-    b.selectPanel(null)
+-    expect(navigation.getSnapshot()).toEqual({ tab: 'installed', view: { kind: 'list' } })
+-    b.selectPanel(PANEL_ID)
+-    expect(navigation.getSnapshot()).toEqual({ tab: 'installed', view: { kind: 'list' } })
++    const handle = entry.store
++    expect(handle.create().getSnapshot()).toEqual({ tab: 'installed', view: { kind: 'list' } })
++    const navigation = handle.create()
++    // 一个分区只有一个页面实例：重复 create 拿到同一个 store。
++    expect(handle.create()).toBe(navigation)
+     assert(navigation.actions.setView)
+     navigation.actions.setView({ kind: 'more' })
+-    b.selectPanel(null)
+-    expect(navigation.getSnapshot()).toEqual({ tab: 'installed', view: { kind: 'list' } })
+-    b.ctx.pluginNavigation.openBundle('dsh-navigation-test')
++    expect(navigation.getSnapshot()).toEqual({ tab: 'installed', view: { kind: 'more' } })
+     removeRoot()
+-    b.selectPanel(null)
+-    expect(navigation.getSnapshot()).toEqual({ tab: 'installed', view: { kind: 'package', name: 'dsh-navigation-test' } })
++    expect(b.slots.entries('settings.section')).toHaveLength(0)
+   })
+ 
+-  it('opens the Plugins list from another panel and resets bundle details without opening installation', async () => {
+-    const b = await bench()
+-    declare(b.slots)
+-    await b.ctx.plugin({ inject: [...inject], apply }).await()
+-    const entry = b.slots.entries('main')[0]!
+-    assert(entry.store && 'create' in entry.store)
+-    const navigation = entry.store.create() as ReturnType<ReturnType<typeof createNavigationStore>['create']>
+-    const injected: object = entry.inject!()
+-    const face = injected as PluginManagerFace
+-    expect(face.hooks.pluginManager.getSnapshot().install.open).toBe(false)
+-
+-    b.ctx.pluginNavigation.openList()
+-    expect(b.panelInfo.getSnapshot().activePanelId).toBe(PANEL_ID)
+-    expect(navigation.getSnapshot()).toEqual({ tab: 'installed', view: { kind: 'list' } })
+-    expect(face.hooks.pluginManager.getSnapshot().install.open).toBe(false)
+-
+-    b.ctx.pluginNavigation.openBundle('dsh-navigation-test')
+-    expect(navigation.getSnapshot()).toEqual({ tab: 'installed', view: { kind: 'package', name: 'dsh-navigation-test' } })
+-    navigation.actions.setTab('fixture-discover')
+-    b.ctx.pluginNavigation.openList()
+-    expect(b.panelInfo.getSnapshot().activePanelId).toBe(PANEL_ID)
+-    expect(navigation.getSnapshot()).toEqual({ tab: 'installed', view: { kind: 'list' } })
+-    expect(face.hooks.pluginManager.getSnapshot().install.open).toBe(false)
+-    expect(b.list).not.toHaveBeenCalled()
+-  })
+-
+-  it('shares refresh failures with the overlay after navigation and releases both registrations across reloads', async () => {
++  it('shares refresh failures with the overlay and releases both registrations across reloads', async () => {
+     const b = await bench()
+     const fiber = b.ctx.plugin({ inject: [...inject], apply })
+     await fiber.await()
+     expect(b.slots.entries('shell.overlay')).toHaveLength(0)
+     const removeRoot = declare(b.slots)
+-    const mainInjected: object = b.slots.entries('main')[0]!.inject!()
+-    const face = mainInjected as PluginManagerFace
++    const sectionInjected: object = b.slots.entries('settings.section')[0]!.inject!()
++    const face = sectionInjected as PluginManagerFace
+     expect(b.ctx.pluginChanges.bundle('unlisted').getSnapshot()).toBe(false)
+     const overlayInjected: object = b.slots.entries('shell.overlay')[0]!.inject!()
+     const overlay = overlayInjected as PluginRefreshToastFace
+     expect(overlay.hooks.pluginManager).toBe(face.hooks.pluginManager)
+     face.ensure()
+     await vi.waitFor(() => { expect(face.hooks.pluginManager.getSnapshot().status).toBe('ready') })
+-    b.selectPanel(PANEL_ID)
+     b.list.mockRejectedValueOnce(new Error('offline'))
+     face.refresh()
+-    b.selectPanel(null)
+     await vi.waitFor(() => { expect(overlay.hooks.pluginManager.getSnapshot().notice?.kind).toBe('refresh-failed') })
+     overlay.dismissNotice()
+     expect(face.hooks.pluginManager.getSnapshot().notice).toBeNull()
+     removeRoot()
+     expect(b.slots.entries('shell.overlay')).toHaveLength(0)
+-    expect(b.slots.entries('main')).toHaveLength(0)
++    expect(b.slots.entries('settings.section')).toHaveLength(0)
+     declare(b.slots)
+     const remountedInjected: object = b.slots.entries('shell.overlay')[0]!.inject!()
+     expect((remountedInjected as PluginRefreshToastFace).hooks.pluginManager).toBe(face.hooks.pluginManager)
+     await fiber.dispose()
+     expect(b.slots.entries('shell.overlay')).toHaveLength(0)
+-    expect(b.slots.entries('main')).toHaveLength(0)
++    expect(b.slots.entries('settings.section')).toHaveLength(0)
+     await b.ctx.plugin({ inject: [...inject], apply }).await()
+     const reloadedInjected: object = b.slots.entries('shell.overlay')[0]!.inject!()
+     expect((reloadedInjected as PluginRefreshToastFace).hooks.pluginManager).not.toBe(face.hooks.pluginManager)
+@@ -204,61 +164,50 @@ describe('ui-plugin-manager browser plugin', () => {
+     const b = await bench('switchable')
+     declare(b.slots)
+     await b.ctx.plugin({ inject: [...inject], apply }).await()
+-    const injected: object = b.slots.entries('main')[0]!.inject!()
++    const injected: object = b.slots.entries('settings.section')[0]!.inject!()
+     const face = injected as PluginManagerFace
+     face.ensure()
+     await vi.waitFor(() => { expect(face.hooks.pluginManager.getSnapshot().status).toBe('ready') })
+     expect(b.list).toHaveBeenCalledTimes(1)
+ 
+     b.access!.set(false)
+-    expect(b.slots.entries('main')).toEqual([])
++    expect(b.slots.entries('settings.section')).toEqual([])
+     b.remote.emit('plugin-manager/changed', [{ reason: 'install' }])
+     await Promise.resolve()
+     expect(b.list).toHaveBeenCalledTimes(1)
+ 
+     b.access!.set(true)
+-    expect(b.slots.entries('main')).toHaveLength(1)
++    expect(b.slots.entries('settings.section')).toHaveLength(1)
+     await vi.waitFor(() => { expect(b.list).toHaveBeenCalledTimes(2) })
+   })
+ 
+-  it('contributes the entry, page, and navigation only while the current Peer may list bundles, and observes changes either way', async () => {
++  it('contributes the section and its page only while the current Peer may list bundles, and observes changes either way', async () => {
+     const allows = vi.fn(() => false)
+     const b = await bench(allows)
+     declare(b.slots)
+     const fiber = b.ctx.plugin({ inject: [...inject], apply })
+     await fiber.await()
+     expect(allows).toHaveBeenCalledWith('pluginManager/listBundles')
+-    for (const name of ['main', 'shell.overlay', 'sidebar.panellist'] as const) expect(b.slots.entries(name)).toEqual([])
++    for (const name of ['settings.section', 'shell.overlay'] as const) expect(b.slots.entries(name)).toEqual([])
+     expect(b.ctx.get('pluginNavigation')).toBeUndefined()
+     expect(b.ctx.get('pluginChanges')?.bundle('dsh-any').getSnapshot()).toBe(false)
+     await fiber.dispose()
+   })
+ 
+-  it('registers the sidebar entry and its page, which reads the Host only once rendered and follows Host changes', async () => {
++  it('registers the settings section and its page, which reads the Host only once rendered and follows Host changes', async () => {
+     const b = await bench()
+     declare(b.slots)
+     const fiber = b.ctx.plugin({ inject: [...inject], apply })
+     await fiber.await()
+ 
+-    b.ctx.pluginNavigation.openBundle('dsh-navigation-test')
+-    expect(b.selectPanel).toHaveBeenCalledWith(PANEL_ID)
+-    const entry = b.slots.entries('main')[0]!
++    const entry = b.slots.entries('settings.section')[0]!
+     assert(entry.store && 'create' in entry.store)
+-    expect(entry.store.create().getSnapshot()).toEqual({ tab: 'installed', view: { kind: 'package', name: 'dsh-navigation-test' } })
++    expect(entry.store.create().getSnapshot()).toEqual({ tab: 'installed', view: { kind: 'list' } })
+     expect(entry.component).toBe(PluginManagerPage)
+-    expect(entry.options).toMatchObject({ key: PANEL_ID })
++    expect(entry.options).toMatchObject({ id: PANEL_ID, order: 15 })
+     expect(entry.locale).toBe(NS)
+-    // The sidebar entry addresses the page by the same id and speaks the dictionary.
+-    const icon = b.slots.entries('sidebar.panellist')[0]!
+-    expect(icon.component).toBe(PluginsPanelIcon)
+-    const unread = () => { throw new Error('The sidebar icon must not read application state') }
+-    const glyph = render(<PluginsPanelIcon size={18} active={false}
+-      usePanelInfo={unread} useSessions={unread} useSessionStatus={unread} useSessionRetainInfo={unread}
+-      useWorkspaces={unread} useContextMenu={contextMenuHook()} useResource={unread} {...allowAllAccess} />)
+-    expect(glyph.container.querySelector('svg')?.getAttribute('width')).toBe('18')
+-    expect(icon.options).toMatchObject({ id: PANEL_ID, order: 0 })
+-    expect(icon.locale).toBe(NS)
+-    expect(resolveSlotLabel(icon.options.label)).toBe('插件')
++    // 设置分区直接用字典里的名字出现在导航里，不再有侧边栏图标。
++    expect(resolveSlotLabel(entry.options.label)).toBe('插件')
+     // The page declares the slots a plugin's configuration arrives through, and binds their projection beside its state.
+     expect(b.slots.spec('plugins.add.actions')).toMatchObject({ kind: 'list', scope: 'root' })
+     expect(b.slots.spec('plugins.item')).toMatchObject({ kind: 'list', scope: 'root' })
+@@ -317,11 +266,9 @@ describe('ui-plugin-manager browser plugin', () => {
+     expect(face.hooks.pluginManager.getSnapshot().update).toBeNull()
+ 
+     await fiber.dispose()
+-    expect(b.ctx.get('pluginNavigation')).toBeUndefined()
+     expect(b.ctx.get('pluginChanges')).toBeUndefined()
+-    expect(b.slots.entries('main')).toHaveLength(0)
++    expect(b.slots.entries('settings.section')).toHaveLength(0)
+     expect(b.slots.entries('shell.overlay')).toHaveLength(0)
+-    expect(b.slots.entries('sidebar.panellist')).toHaveLength(0)
+     b.remote.emit('plugin-manager/changed', [{ reason: 'install' }])
+     await Promise.resolve()
+     expect(b.list).toHaveBeenCalledTimes(3)
+diff --git a/packages/client/ui-schedule/src/client/index.ts b/packages/client/ui-schedule/src/client/index.ts
+index 5df35309..9f315834 100644
+--- a/packages/client/ui-schedule/src/client/index.ts
++++ b/packages/client/ui-schedule/src/client/index.ts
+@@ -38,7 +38,6 @@ import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
+ import type {} from '@deepseek-ai/dsh-client-ui-tool/client'
+ import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
+ import type {} from '@deepseek-ai/dsh-api-remote-access/client'
+-import type { MainPanelId } from '@deepseek-ai/dsh-client-ui-layout/client'
+ import type { RemoteFailure, RemoteResult } from '@deepseek-ai/dsh-api-remotes/client'
+ import type {} from '@deepseek-ai/dsh-client-connection/client'
+ import type { SessionId } from '@deepseek-ai/dsh-session/types'
+@@ -58,13 +57,12 @@ import { TaskTabBindings } from './task-tab-bindings.ts'
+ import { createEditorStore } from './editor-store.ts'
+ import { TaskManagerPage, type TaskManagerInjected } from './TaskManagerPage.tsx'
+ import type { TaskDetailInjected } from './TaskDetail.tsx'
+-import { TaskManagerIcon } from './TaskManagerIcon.tsx'
+ import { sessionLinkState } from './session-link.ts'
+ import { en, ja, es, fr, de, ru, pt, NS, zh, type ScheduleCatalogKey } from './locales.ts'
+ import { en as managerEn, ja as managerJa, es as managerEs, fr as managerFr, de as managerDe, ru as managerRu, pt as managerPt, zh as managerZh, type TaskManagerKey } from './task-manager-locales.ts'
+ 
+ const MANAGER_NS = 'schedule.manager'
+-const PANEL_ID = 'schedules' as MainPanelId
++const PANEL_ID = 'schedules'
+ 
+ declare module '@deepseek-ai/dsh-client-ui-slots' {
+   interface LocaleNamespaceMap {
+@@ -215,9 +213,12 @@ export function apply(ctx: ClientContext): void {
+       locale: MANAGER_NS,
+       inject: (): ScheduleTaskCatalogInjected & ScheduleTaskBindingInjected => ({ hooks: detail.hooks, taskBindings }),
+     }, ScheduleTaskTabTitle))
+-    yield ctx.slots.inject('main', () => ctx.slots.register({
+-      name: 'main',
+-      key: PANEL_ID,
++    // 本机 fork：自动化任务从侧边栏主面板挪进设置，成为与「通用设置」「模型」平级的一级分区。
++    yield ctx.slots.inject('settings.section', () => ctx.slots.register({
++      name: 'settings.section',
++      id: PANEL_ID,
++      order: 25,
++      label: () => t('panel'),
+       locale: MANAGER_NS,
+       store: createEditorStore(),
+       inject: (): TaskManagerInjected => ({
+@@ -237,13 +238,6 @@ export function apply(ctx: ClientContext): void {
+         },
+       }),
+     }, TaskManagerPage))
+-    yield ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({
+-      name: 'sidebar.panellist',
+-      id: PANEL_ID,
+-      order: 10,
+-      locale: MANAGER_NS,
+-      label: () => t('panel'),
+-    }, TaskManagerIcon))
+     yield ctx.slots.inject('conversation.chat.turnTail', () => ctx.slots.register({
+       name: 'conversation.chat.turnTail',
+       id: 'schedule-created',
+diff --git a/packages/client/ui-schedule/tests/browser-plugin.client.spec.ts b/packages/client/ui-schedule/tests/browser-plugin.client.spec.ts
+index 517a0ed0..63d0fe98 100644
+--- a/packages/client/ui-schedule/tests/browser-plugin.client.spec.ts
++++ b/packages/client/ui-schedule/tests/browser-plugin.client.spec.ts
+@@ -169,9 +169,9 @@ interface HostPage {
+  */
+ async function hostPage(schedule: object): Promise<HostPage> {
+   const ctx = await baseContext({ schedule, $on: () => () => {} })
+-  ctx.slots.register({ name: 'root', children: { main: { kind: 'keyed', scope: 'root' } } } as never, Empty)
++  ctx.slots.register({ name: 'root', children: { 'settings.section': { kind: 'list', scope: 'root' } } } as never, Empty)
+   await ctx.plugin({ inject: [...inject], apply }).await()
+-  const face = injectedFace(ctx.slots.entries('main')[0]!, undefined as never) as TaskManagerInjected
++  const face = injectedFace(ctx.slots.entries('settings.section')[0]!, undefined as never) as TaskManagerInjected
+   const dispose = face.hooks.catalog.subscribe(vi.fn())
+   await face.onRetry()
+   return {
+@@ -191,10 +191,10 @@ describe('ui-schedule browser half', () => {
+       .mockRejectedValueOnce(new Error('Disconnected'))
+     const ctx = await baseContext({ schedule: { deliveryLimits }, $on: () => () => {} })
+     try {
+-      const owner = ctx.slots.register({ name: 'root', children: { main: { kind: 'keyed', scope: 'root' } } } as never, Empty)
++      const owner = ctx.slots.register({ name: 'root', children: { 'settings.section': { kind: 'list', scope: 'root' } } } as never, Empty)
+       try {
+         await ctx.plugin({ inject: [...inject], apply }).await()
+-        const face = injectedFace(ctx.slots.entries('main')[0]!, undefined as never) as TaskManagerInjected
++        const face = injectedFace(ctx.slots.entries('settings.section')[0]!, undefined as never) as TaskManagerInjected
+         await expect(face.hostActions.loadNewSessionInterval()).resolves.toBe(7200)
+         await expect(face.hostActions.loadNewSessionInterval()).resolves.toBeUndefined()
+         await expect(face.hostActions.loadNewSessionInterval()).resolves.toBeUndefined()
+@@ -403,7 +403,7 @@ describe('ui-schedule browser half', () => {
+       children: {
+         'sidebar.right.pane.tab': { kind: 'keyed', scope: 'session' },
+         'sidebar.right.pane.tab.title': { kind: 'keyed', scope: 'session' },
+-        main: { kind: 'keyed', scope: 'root' },
++        'settings.section': { kind: 'list', scope: 'root' },
+       },
+     } as never, Empty)
+     const startSession = vi.spyOn(ctx.uiWorkspace, 'startSession')
+@@ -425,7 +425,7 @@ describe('ui-schedule browser half', () => {
+       ) as ScheduleTaskCatalogInjected & ScheduleTaskBindingInjected
+       expect(chip.taskBindings).toBe(body.taskBindings)
+       expect(chip.hooks.catalog).toBe(body.hooks.catalog)
+-      const panel = injectedFace(ctx.slots.entries('main')[0]!, undefined as never) as TaskManagerInjected
++      const panel = injectedFace(ctx.slots.entries('settings.section')[0]!, undefined as never) as TaskManagerInjected
+       expect(Object.keys(managerLocales).sort()).toEqual(['de', 'en', 'es', 'fr', 'ja', 'pt', 'ru', 'zh'])
+       for (const [language, dictionary] of Object.entries(managerLocales)) {
+         expect(dictionary['host.createPrompt']).not.toContain('\n')
+@@ -508,22 +508,19 @@ describe('ui-schedule browser half', () => {
+     const openSession = vi.spyOn(ctx.uiWorkspace, 'openSession')
+     const fiber = ctx.plugin({ inject: [...inject], apply })
+     await fiber.await()
+-    expect(ctx.slots.entries('main')).toEqual([])
++    expect(ctx.slots.entries('settings.section')).toEqual([])
+     const owner = ctx.slots.register({
+       name: 'root',
+       children: {
+-        main: { kind: 'keyed', scope: 'root' },
+-        'sidebar.panellist': { kind: 'list', scope: 'root' },
++        'settings.section': { kind: 'list', scope: 'root' },
+       },
+     } as never, Empty)
+-    const entry = ctx.slots.entries('main')[0]!
+-    expect(entry.options.key).toBe('schedules')
+-    const panel = ctx.slots.entries('sidebar.panellist')[0]!
+-    expect(panel.options.id).toBe('schedules')
++    const entry = ctx.slots.entries('settings.section')[0]!
++    expect(entry.options.id).toBe('schedules')
+     ctx.locale.setLocale('en')
+-    expect(resolveSlotLabel(panel.options.label)).toBe('Automation tasks')
++    expect(resolveSlotLabel(entry.options.label)).toBe('Automation tasks')
+     ctx.locale.setLocale('zh')
+-    expect(resolveSlotLabel(panel.options.label)).toBe('自动化任务')
++    expect(resolveSlotLabel(entry.options.label)).toBe('自动化任务')
+     const face = injectedFace(entry, undefined as never) as TaskManagerInjected
+     const dispose = face.hooks.catalog.subscribe(vi.fn())
+     try {
+@@ -566,8 +563,7 @@ describe('ui-schedule browser half', () => {
+     } finally {
+       dispose()
+       await fiber.dispose()
+-      expect(ctx.slots.entries('main')).toEqual([])
+-      expect(ctx.slots.entries('sidebar.panellist')).toEqual([])
++      expect(ctx.slots.entries('settings.section')).toEqual([])
+       owner()
+       await ctx.fiber.dispose()
+     }
+@@ -588,14 +584,14 @@ describe('ui-schedule browser half', () => {
+     const owner = ctx.slots.register({
+       name: 'root',
+       children: {
+-        main: { kind: 'keyed', scope: 'root' },
++        'settings.section': { kind: 'list', scope: 'root' },
+         'shell.overlay': { kind: 'list', scope: 'root' },
+       },
+     } as never, Empty)
+     const fiber = ctx.plugin({ inject: [...inject], apply })
+     await fiber.await()
+     try {
+-      const face = injectedFace(ctx.slots.entries('main')[0]!, undefined as never) as TaskManagerInjected
++      const face = injectedFace(ctx.slots.entries('settings.section')[0]!, undefined as never) as TaskManagerInjected
+       const toast = injectedFace(ctx.slots.entries('shell.overlay')[0]!) as Omit<DeleteToastSource, 'report' | 'reportClear'>
+       const dispose = face.hooks.catalog.subscribe(vi.fn())
+       try {
+@@ -626,7 +622,7 @@ describe('ui-schedule browser half', () => {
+     const owner = ctx.slots.register({
+       name: 'root',
+       children: {
+-        main: { kind: 'keyed', scope: 'root' },
++        'settings.section': { kind: 'list', scope: 'root' },
+         'shell.overlay': { kind: 'list', scope: 'root' },
+       },
+     } as never, Empty)
+@@ -634,7 +630,7 @@ describe('ui-schedule browser half', () => {
+     await fiber.await()
+     let claimed = false
+     try {
+-      const face = injectedFace(ctx.slots.entries('main')[0]!, undefined as never) as TaskManagerInjected
++      const face = injectedFace(ctx.slots.entries('settings.section')[0]!, undefined as never) as TaskManagerInjected
+       const toast = injectedFace(ctx.slots.entries('shell.overlay')[0]!) as Omit<DeleteToastSource, 'report' | 'reportClear'>
+       const clearing = face.onClearEnded()
+       // The page panel can unmount while the Host removal is still in flight;
+@@ -659,7 +655,7 @@ describe('ui-schedule browser half', () => {
+       children: {
+         'sidebar.session.row.leading': { kind: 'list', scope: 'root' },
+         'sidebar.session.row.hover': { kind: 'list', scope: 'root' },
+-        main: { kind: 'keyed', scope: 'root' },
++        'settings.section': { kind: 'list', scope: 'root' },
+       },
+     } as never, Empty)
+     const fiber = ctx.plugin({ inject: [...inject], apply })
+@@ -676,7 +672,7 @@ describe('ui-schedule browser half', () => {
+       // A root-scope list entry receives no owner values in `inject`. Both row
+       // seats inject the one Host catalog the page reads, and neither creates a
+       // per-Session Remote source, so N visible rows issue one query.
+-      const page = injectedFace(ctx.slots.entries('main')[0]!, undefined as never) as SessionCatalogFace
++      const page = injectedFace(ctx.slots.entries('settings.section')[0]!, undefined as never) as SessionCatalogFace
+       for (const entry of [mark, hover]) {
+         const face = injectedFace(entry) as SessionCatalogFace
+         expect(face.hooks.catalog).toBe(page.hooks.catalog)
+diff --git a/packages/preset/agent-preset-registry/src/index.ts b/packages/preset/agent-preset-registry/src/index.ts
+index 5205a582..61b5a7cd 100644
+--- a/packages/preset/agent-preset-registry/src/index.ts
++++ b/packages/preset/agent-preset-registry/src/index.ts
+@@ -218,7 +218,11 @@ export class AgentPresetRegistry extends TypertRemoteService {
+    * @returns Current metadata, including failure when activation failed.
+    */
+   async resolve(id?: string): Promise<AgentPreset> {
+-    const wanted = id ?? this.defaultId
++    let wanted = id ?? this.defaultId
++    if (!this.definitions.has(wanted) && wanted !== this.defaultId) {
++      this.owner.logger.warn(`unknown agent preset ${wanted}; falling back to ${this.defaultId}`)
++      wanted = this.defaultId
++    }
+     const record = this.definitions.get(wanted)
+     if (record === undefined) throw new RemoteError('agent-preset/not-found', `Unknown agent preset: ${wanted}`,
+       { agentPreset: wanted, available: [...this.definitions.keys()] })
+@@ -246,7 +250,11 @@ export class AgentPresetRegistry extends TypertRemoteService {
+   }
+ 
+   private async retain(id?: string): Promise<Generation> {
+-    const wanted = id ?? this.defaultId
++    let wanted = id ?? this.defaultId
++    if (!this.definitions.has(wanted) && wanted !== this.defaultId) {
++      this.owner.logger.warn(`unknown agent preset ${wanted}; falling back to ${this.defaultId}`)
++      wanted = this.defaultId
++    }
+     while (true) {
+       const record = this.definitions.get(wanted)
+       if (record === undefined) throw new RemoteError('agent-preset/not-found', `Unknown agent preset: ${wanted}`,

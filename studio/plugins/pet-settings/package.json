@@ -1,0 +1,21 @@
+{
+  "name": "studio-pet-settings",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Agents Studio 工作台的「设置 → 桌宠」一级分区：显示调节与微信渠道配置",
+  "type": "module",
+  "main": "index.mjs",
+  "exports": {
+    ".": "./index.mjs",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-settings"
+      ],
+      "platform": "web"
+    }
+  }
+}

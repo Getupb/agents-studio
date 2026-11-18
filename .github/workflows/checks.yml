@@ -1,0 +1,39 @@
+name: public-repo-checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  syntax-and-secrets:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Syntax check host plugins and patch scripts
+        shell: pwsh
+        run: |
+          $files = @(
+            "studio/plugins/brand/index.mjs",
+            "studio/plugins/settings-entry/index.mjs",
+            "studio/plugins/pet-settings/index.mjs",
+            "studio/plugins/preset-settings/index.mjs",
+            "studio/patches/build-zero-preset.mjs",
+            "studio/patches/patch-pet-channel.mjs",
+            "patches/dsh-pet/patch-pet-channel.mjs"
+          )
+          foreach ($f in $files) {
+            if (Test-Path -LiteralPath $f) {
+              node --check $f
+            }
+          }
+
+      - name: Check for secrets and private paths
+        shell: pwsh
+        run: ./scripts/check-public.ps1

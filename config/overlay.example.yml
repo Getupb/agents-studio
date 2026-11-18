@@ -1,0 +1,24 @@
+# studio profile 的自研插件覆盖层（M0 验证用）
+# 用法：dsh --profile studio --patch "<绝对路径>/studio/overlay.yml" web
+#
+# studio-pet-settings：工作台「设置 → 桌宠」一级分区（显示调节 + 微信渠道）。
+# 显式登记在这里：bundle 层里没有它，工作台就不会有这一页；删掉这段即整页消失。
+# 页面只读 dsh-pet 已有宿主路由（GET /config、POST /pet-appearance、/wechat/*），
+# 不自己读写配置文件——配置的唯一写入方仍是 dsh-pet。
+- insert:
+    - id: studio-pet-settings
+      name: 'studio-pet-settings'
+    # studio-settings-entry：侧边栏左下角只留「设置」。
+    # 占住设置外壳的 `settings.launcher` 席位，替换自带的「更多」账号菜单；
+    # 删掉这段就退回 DSH 自带的账号菜单。
+    - id: studio-settings-entry
+      name: 'studio-settings-entry'
+    # studio-preset-settings：设置里的「Agent 预设」整页由我们接管（人设 / 工具边界 / 微信渠道）。
+    # 同时把上游只读的 ui-agent-preset 页停用（见 cordis.patch.yml），避免两个同 id 分区打架。
+    - id: studio-preset-settings
+      name: 'studio-preset-settings'
+    # studio-brand：工作台左上角的「DSH 本地构建」换成文字标记 + Agents Studio。
+    # 占住侧边栏品牌行的 `sidebar.brand.mark` / `sidebar.brand.name` 两个单席位；
+    # 删掉这段就退回自带的鱼形图标与「DSH 本地构建」。
+    - id: studio-brand
+      name: 'studio-brand'

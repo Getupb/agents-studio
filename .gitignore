@@ -1,0 +1,50 @@
+# ---- 私有运行数据（绝对不要提交） ----
+.dsh-home/
+.dsh-pet-uploads/
+.runtime/
+.workbuddy/
+/dsh/
+/studio/vendor/
+studio/profile/
+studio/plugins/hello/
+node_modules/
+**/node_modules/
+
+# 本地启动器（含真实密钥，只保留脚本模板）
+/start-studio.cmd
+/start-studio-hidden.vbs
+
+# 密钥与本地配置
+.env
+.env.*
+!.env.example
+*.local.*
+*.secret.*
+credentials.yaml
+.credentials.yaml
+
+# 日志、临时文件、备份
+*.log
+*.tmp
+.tmp-*
+*.bak
+*.bak-*
+*.bak-sync/
+
+# 根目录里的验收截图（文档截图放 docs/assets/）
+/*.png
+/*.jpg
+/*.jpeg
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 依赖与构建缓存
+.pnpm-store/
+.cache/
+dist/
+build/
+coverage/

@@ -1,0 +1,21 @@
+{
+  "name": "studio-settings-entry",
+  "version": "0.0.1",
+  "private": true,
+  "description": "把工作台侧边栏左下角只留一个「设置」一级入口（替换自带的「更多」账号菜单）",
+  "type": "module",
+  "main": "index.mjs",
+  "exports": {
+    ".": "./index.mjs",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-settings"
+      ],
+      "platform": "web"
+    }
+  }
+}

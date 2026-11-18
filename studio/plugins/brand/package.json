@@ -1,0 +1,21 @@
+{
+  "name": "studio-brand",
+  "version": "0.0.1",
+  "private": true,
+  "description": "把工作台左上角的「DSH 本地构建」换成自定义品牌（文字标记 + Agents Studio）",
+  "type": "module",
+  "main": "index.mjs",
+  "exports": {
+    ".": "./index.mjs",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ],
+      "platform": "web"
+    }
+  }
+}

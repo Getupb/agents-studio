@@ -1,0 +1,55 @@
+# studio profile 的用户覆盖层
+# 说明：模型接入全部走官方 llm-pi-ai 自定义 provider，不改适配层代码。
+# 密钥不写进本文件：由环境变量（SPARK_API_KEY / ZHIPU_API_KEY）或 Web「设置 → 模型」写入凭据。
+
+# 文本主力：讯飞星火 Spark X2.6（OpenAI 兼容，已验证支持 tool_calls 与 reasoning）
+- id: llm-pi-ai
+  config:
+    providers:
+      spark:
+        displayName: 星火 Spark X2.6
+        apiKeyEnv: SPARK_API_KEY
+        api: openai-completions
+        baseURL: https://maas-api.cn-huabei-1.xf-yun.com/v1
+        defaultContextWindow: 128000
+        defaultMaxTokens: 32768
+        models:
+          - id: spark-x2.6
+            displayName: Spark X2.6（文本 / 工具）
+
+      # 识图：智谱 GLM 视觉（4.6V-Flash 免费档当前限流，4V-Flash 作兜底）
+      # 兼文本：glm-4.5-flash 是实测**真流式**的那一档（中位 29ms 一个 delta），
+      # 星火 spark-x2.6 会把正文攒成几批吐（静默数秒 → 一大段），桌宠气泡只能分段跳。
+      zhipu:
+        displayName: 智谱 GLM 视觉
+        apiKeyEnv: ZHIPU_API_KEY
+        api: openai-completions
+        baseURL: https://open.bigmodel.cn/api/paas/v4
+        defaultInput: [text, image]
+        defaultContextWindow: 64000
+        defaultMaxTokens: 8192
+        models:
+          - id: glm-4.6v-flash
+            displayName: GLM-4.6V-Flash（首选）
+            input: [text, image]
+          - id: glm-4v-flash
+            displayName: GLM-4V-Flash（兜底）
+            input: [text, image]
+          - id: glm-4.5-flash
+            displayName: GLM-4.5-Flash（文本 / 工具 / 流式平滑）
+            input: [text]
+          - id: glm-4-flash
+            displayName: GLM-4-Flash（文本 / 兜底）
+            input: [text]
+
+# 新会话默认走文本主力；识图任务由 subagent 指定 zhipu 路由
+- id: agent-default-model
+  config:
+    provider: spark
+    model: spark-x2.6
+
+# Windows 现实：ACL 沙箱在 workspace-write 下会让 shell 工具挂死（不报错、不返回），
+# 故本机默认放开文件沙箱；审批链仍然生效。修好沙箱后改回 workspace-write。
+- id: sandbox-policy
+  config:
+    mode: danger-full-access

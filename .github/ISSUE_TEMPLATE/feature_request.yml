@@ -1,0 +1,45 @@
+name: 功能建议
+description: 提出一个改进建议
+title: "[Feature] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        本项目是个人非商业项目，且上游版本已冻结。请说明建议解决的具体问题，而不是只写“希望支持 XX”。
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解决的问题
+      description: 现在哪里不好用？
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 你的方案
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 考虑过的替代方案
+  - type: dropdown
+    id: scope
+    attributes:
+      label: 影响范围
+      options:
+        - 工作台 UI
+        - 预设 / 工具边界
+        - 桌宠 / Helper
+        - 微信渠道
+        - 安装 / 文档
+        - 其他
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 确认
+      options:
+        - label: 我知道本项目不跟随 dsh / dsh-pet 最新版本
+          required: true
