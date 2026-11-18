@@ -37,6 +37,7 @@ window.__ModuleLoader__.load({
       soft: 'rgba(128,128,128,0.08)',
       ok: '#2f9e44',
       bad: '#e03131',
+      link: '#4f7cff',
     };
     const card = { border: '1px solid ' + color.line, borderRadius: 10, padding: '16px 18px', marginBottom: 16 };
     const labelStyle = { fontSize: 13, color: color.muted, marginBottom: 6, display: 'block' };
@@ -239,6 +240,9 @@ window.__ModuleLoader__.load({
         return h('div', { style: { fontSize: 13, color: color.muted } }, '正在读取桌宠配置…');
       }
 
+      // 微信返回的 qrcodeUrl 有时是 H5 扫码页，不是图片；只有图片地址才直接渲染。
+      const qrIsImage = qr !== null && (/^data:image\//.test(qr) || /\.(png|jpe?g|gif|webp)(\?|$)/i.test(qr));
+
       return h(
         'div',
         { style: { maxWidth: 680 } },
@@ -314,7 +318,20 @@ window.__ModuleLoader__.load({
           qr !== null && qr !== ''
             ? h('div', { style: { marginTop: 14, textAlign: 'center' } },
                 h('div', { style: { fontSize: 12, color: color.muted, marginBottom: 8 } }, '用手机微信扫码（5 分钟内有效）：'),
-                h('img', { src: qr, alt: '微信登录二维码', style: { width: 200, height: 200, imageRendering: 'pixelated' } }),
+                // 微信返回的 qrcodeUrl 有时是一个 H5 扫码页，不是图片地址；直接塞进 img 会白屏。
+                // 图片地址才渲染二维码，其他情况一律给可点击链接兜底。
+                qrIsImage
+                  ? h('img', { src: qr, alt: '微信登录二维码', style: { width: 200, height: 200, imageRendering: 'pixelated' } })
+                  : null,
+                h('div', { style: { marginTop: 8, fontSize: 13 } },
+                  h('a', {
+                    href: qr,
+                    target: '_blank',
+                    rel: 'noreferrer',
+                    style: { color: color.link, textDecoration: 'underline', wordBreak: 'break-all' },
+                  }, '打开微信扫码页面'),
+                ),
+                h('div', { style: { marginTop: 6, fontSize: 12, color: color.muted } }, '如果二维码没有显示，直接点上面的链接打开扫码页面。'),
               )
             : null,
           pendingVerify === '' && qr !== null && qr !== ''

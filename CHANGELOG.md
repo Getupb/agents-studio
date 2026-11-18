@@ -7,6 +7,7 @@
 - 微信渠道 `回复失败：session "session-pet-wechat-v1" ...`：dsh-pet 与工作台页面同时申请同一间会话的写句柄时，`create`/`resume` 都会失败。新增 `patches/dsh-pet/patch-session-share.mjs`，优先复用 `agents.get(sessionId)` 返回的活 agent，并在首次/二次打开失败后再查一次。
 - `disposeHandle()` 释放失败时不再提前从存活句柄表删除，下一轮仍可重试回收；避免写锁永久留在会话上。
 - 微信渠道同时保留工具能力与会话记录，不再静默回落原生单轮。
+- 微信扫码：`qrcodeUrl` 是 H5 扫码页时不再强行当作图片渲染，新增“打开微信扫码页面”可点击链接兜底。
 
 ## v0.1.0-alpha — 2026-11-18
 
